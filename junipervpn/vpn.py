@@ -156,7 +156,7 @@ class juniper_vpn(object):
             elif form.name == 'frmConfirmation':
                 return 'continue'
             else:
-                raise Exception('Unknown form type:', form.name)
+                raise ValueError('Unknown form type: {}'.format(form.name))
         return 'tncc'
 
     def run(self):
@@ -373,7 +373,7 @@ def main():
                 elif val in ['false', '0', 'no', 'disable', 'off']:
                     val = False
                 else:
-                    raise Exception("Unable to parse funk argument", val)
+                    raise ValueError("Unable to parse funk argument", val)
                 args.enable_funk = val
             except:
                 pass
