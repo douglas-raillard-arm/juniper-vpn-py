@@ -306,7 +306,6 @@ class juniper_vpn(object):
                 self.child.wait()
             except OSError:
                 pass
-        sys.exit(0)
 
 def main():
     parser = argparse.ArgumentParser(conflict_handler='resolve')
