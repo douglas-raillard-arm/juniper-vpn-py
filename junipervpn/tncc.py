@@ -4,7 +4,6 @@ import sys
 import os
 import logging
 import io
-import mechanize
 import http.cookiejar
 import struct
 import socket
@@ -14,16 +13,20 @@ import collections
 import zlib
 import html.parser
 import socket
-import netifaces
-import urlgrabber
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 import platform
 import json
 import datetime
+import xml.etree.ElementTree
+
 import pyasn1_modules.pem
 import pyasn1_modules.rfc2459
 import pyasn1.codec.der.decoder
-import xml.etree.ElementTree
+import mechanize
+import netifaces
+import urlgrabber
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -645,4 +648,3 @@ if __name__ == "__main__":
         server = tncc_server(sock, t)
         while True:
             server.process_cmd()
-

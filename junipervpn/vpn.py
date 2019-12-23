@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import subprocess
-import mechanize
 import http.cookiejar
 import getpass
 import sys
@@ -16,11 +15,14 @@ import binascii
 import hmac
 import hashlib
 import shlex
-import tncc
 import platform
 import socket
-import netifaces
 import datetime
+
+import mechanize
+import netifaces
+
+from junipervpn import tncc
 
 debug = False
 
@@ -308,8 +310,7 @@ class juniper_vpn(object):
                 pass
         sys.exit(0)
 
-if __name__ == "__main__":
-
+def main():
     parser = argparse.ArgumentParser(conflict_handler='resolve')
     parser.add_argument('-h', '--host', type=str,
                         help='VPN host name')
@@ -389,3 +390,6 @@ if __name__ == "__main__":
     jvpn = juniper_vpn(args)
     signal.signal(signal.SIGINT, jvpn.stop)
     jvpn.run()
+
+if __name__ == "__main__":
+    main()
