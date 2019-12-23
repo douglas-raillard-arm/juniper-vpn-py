@@ -207,7 +207,7 @@ class x509cert(object):
                 value = str(pyasn1.codec.der.decoder.decode(value)[0])
                 try:
                     ret[type].append(value)
-                except:
+                except KeyError:
                     ret[type] = [value]
         return ret
 
@@ -242,9 +242,10 @@ class x509cert(object):
             try:
                 ret = datetime.datetime.strptime(tm_str, fmt)
                 ret += datetime.timedelta(minutes=tz)
-                return ret
-            except:
+            except ValueError:
                 pass
+            else:
+                return ret
 
         raise ValueError('Could not parse certificate time')
 
@@ -326,9 +327,10 @@ class tncc(object):
                 key = ''
                 try:
                     key, val = line.split('=', 1)
-                    response[key] = val
-                except:
+                except ValueError:
                     pass
+                else:
+                    response[key] = val
                 last_key = key
         return response
 
@@ -348,9 +350,10 @@ class tncc(object):
                                 field = field.strip()
                                 try:
                                     key, value = field.split('=', 1)
-                                    d[key] = value
-                                except:
+                                except ValueError:
                                     pass
+                                else:
+                                    d[key] = value
                             objs.append(d)
         p = ParamHTMLParser()
         p.feed(msg_data)
@@ -466,11 +469,11 @@ class tncc(object):
         else:
             try:
                 self.cj.set_cookie(dspreauth)
-            except:
+            except Exception:
                 self.set_cookie('DSPREAUTH', dspreauth)
             try:
                 self.cj.set_cookie(dssignin)
-            except:
+            except Exception:
                 self.set_cookie('DSSIGNIN', dssignin)
 
         inner = encode_0ce7('policy request', MSG_POLICY)
@@ -527,14 +530,13 @@ class tncc(object):
                 fail = False
                 for dn_name, dn_vals in req_dns.items():
                     for name, val in dn_vals.items():
-                        try:
-                            if dn_name == 'IssuerDN':
-                                assert val in cert.issuer[name]
-                            else:
-                                msg = 'Unknown DN type {}'.format(dn_name)
-                                logging.warn(msg)
-                                raise ValueError(msg)
-                        except:
+                        if dn_name == 'IssuerDN':
+                            if val not in cert.issuer[name]:
+                                fail = True
+                                break
+                        else:
+                            msg = 'Unknown DN type {}'.format(dn_name)
+                            logging.warn(msg)
                             fail = True
                             break
                     if fail:
@@ -602,10 +604,11 @@ if __name__ == "__main__":
         for iface in netifaces.interfaces():
             try:
                 mac = netifaces.ifaddresses(iface)[netifaces.AF_LINK][0]['addr']
-                assert mac != '00:00:00:00:00:00'
-                mac_addrs.append(mac)
-            except:
+            except Exception:
                 pass
+            else:
+                if mac != '00:00:00:00:00:00':
+                    mac_addrs.append(mac)
 
     hostname = os.environ.get('TNCC_HOSTNAME', socket.gethostname())
 
