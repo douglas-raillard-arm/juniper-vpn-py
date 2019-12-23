@@ -1,23 +1,22 @@
-#!/usr/bin/env python2.7
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import sys
 import os
 import logging
-import StringIO
+import io
 import mechanize
-import cookielib
+import http.cookiejar
 import struct
 import socket
 import ssl
 import base64
 import collections
 import zlib
-import HTMLParser
+import html.parser
 import socket
 import netifaces
 import urlgrabber
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import platform
 import json
 import datetime
@@ -249,7 +248,7 @@ class x509cert(object):
     def __init__(self, cert_file):
         with open(cert_file, 'r') as f:
             self.data = f.read()
-        f = StringIO.StringIO(self.data)
+        f = io.StringIO(self.data)
         substrate = pyasn1_modules.pem.readPemFromFile(f)
         cert = pyasn1.codec.der.decoder.decode(substrate, pyasn1_modules.rfc2459.Certificate())[0]
         tbs = cert.getComponentByName('tbsCertificate')
@@ -276,7 +275,7 @@ class tncc(object):
 
         self.br = mechanize.Browser()
 
-        self.cj = cookielib.LWPCookieJar()
+        self.cj = http.cookiejar.LWPCookieJar()
         self.br.set_cookiejar(self.cj)
 
         # Browser options
@@ -304,7 +303,7 @@ class tncc(object):
         return None
 
     def set_cookie(self, name, value):
-        cookie = cookielib.Cookie(version=0, name=name, value=value,
+        cookie = http.cookiejar.Cookie(version=0, name=name, value=value,
                 port=None, port_specified=False, domain=self.vpn_host,
                 domain_specified=True, domain_initial_dot=False, path=self.path,
                 path_specified=True, secure=True, expires=None, discard=True,
@@ -334,7 +333,7 @@ class tncc(object):
         # The decompressed data is HTMLish, decode it. The value="" of each
         # tag is the data we want.
         objs = []
-        class ParamHTMLParser(HTMLParser.HTMLParser):
+        class ParamHTMLParser(html.parser.HTMLParser):
             def handle_starttag(self, tag, attrs):
                 if tag.lower() == 'param':
                     for key, value in attrs:
@@ -404,7 +403,7 @@ class tncc(object):
         msg = "<FunkMessage VendorID='2636' ProductID='1' Version='1' Platform='%s'> " % self.platform
         msg += "<ClientAttributes SequenceID='0'> "
         msg += "<Attribute Name='Platform' Value='%s' />" % self.platform
-        for name, value in certs.iteritems():
+        for name, value in certs.items():
             msg += "<Attribute Name='%s' Value='%s' />" % (name, value.data)
         msg += "</ClientAttributes>  </FunkMessage>"
 
@@ -429,8 +428,8 @@ class tncc(object):
         }
 
         msg = ''
-        for policy_key, policy_val in policy_blocks.iteritems():
-            v = ''.join([ '%s=%s;' % (k, v) for k, v in policy_val.iteritems()])
+        for policy_key, policy_val in policy_blocks.items():
+            v = ''.join([ '%s=%s;' % (k, v) for k, v in policy_val.items()])
             msg += '<parameter name="%s" value="%s">' % (policy_key, v)
 
         return encode_0ce7(msg, 0xa4c18)
@@ -488,7 +487,7 @@ class tncc(object):
         if self.deviceid:
             post_attrs['deviceid'] = self.deviceid
 
-        post_data = ''.join([ '%s=%s;' % (k, v) for k, v in post_attrs.iteritems()])
+        post_data = ''.join([ '%s=%s;' % (k, v) for k, v in post_attrs.items()])
         self.r = self.br.open('https://' + self.vpn_host + self.path + 'hc/tnchcupdate.cgi', post_data)
 
         # Parse the data returned into a key/value dict
@@ -514,17 +513,17 @@ class tncc(object):
             for obj in policy_objs:
                 if 'policy' in obj:
                     logging.debug('policy %s', obj['policy'])
-                    for key, val in obj.iteritems():
+                    for key, val in obj.items():
                         if key != 'policy':
                             logging.debug('\t%s %s', key, val)
 
         # Try to locate the required certificates
         certs = dict()
-        for cert_id, req_dns in req_certs.iteritems():
+        for cert_id, req_dns in req_certs.items():
             for cert in self.avail_certs:
                 fail = False
-                for dn_name, dn_vals in req_dns.iteritems():
-                    for name, val in dn_vals.iteritems():
+                for dn_name, dn_vals in req_dns.items():
+                    for name, val in dn_vals.items():
                         try:
                             if dn_name == 'IssuerDN':
                                 assert val in cert.issuer[name]
@@ -554,7 +553,7 @@ class tncc(object):
             'firsttime': '1'
         }
 
-        post_data = ''.join([ '%s=%s;' % (k, v) for k, v in post_attrs.iteritems()])
+        post_data = ''.join([ '%s=%s;' % (k, v) for k, v in post_attrs.items()])
         self.r = self.br.open('https://' + self.vpn_host + self.path + 'hc/tnchcupdate.cgi', post_data)
 
         # We have a new DSPREAUTH cookie
@@ -631,7 +630,7 @@ if __name__ == "__main__":
         dspreauth_value = sys.argv[2]
         dssignin_value = sys.argv[3]
         'TNCC ', dspreauth_value, dssignin_value
-        print t.get_cookie(dspreauth, dssignin).value
+        print(t.get_cookie(dspreauth, dssignin).value)
     else:
         sock = socket.fromfd(0, socket.AF_UNIX, socket.SOCK_SEQPACKET)
         server = tncc_server(sock, t)
