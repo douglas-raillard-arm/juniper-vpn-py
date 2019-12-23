@@ -66,7 +66,7 @@ def hotp(key):
     counter = int2beint64(int(time.time()) / 30)
     return dec(hmac.new(key, counter, hashlib.sha256).digest(), 6)
 
-class JuniperVPN(object):
+class JuniperVPN:
     def __init__(self, args):
         self.args = args
         self.fixed_password = args.password is not None

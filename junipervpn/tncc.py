@@ -195,7 +195,7 @@ def encode_0cf1(s):
 def encode_0cf3(i):
     return encode_packet(0x0013, 1, struct.pack("<I", i))
 
-class X509Cert(object):
+class X509Cert:
 
     @staticmethod
     def decode_names(data):
@@ -262,7 +262,7 @@ class X509Cert(object):
         self.not_after = self.decode_time(validity.getComponentByName("notAfter"))
         self.subject = self.decode_names(tbs.getComponentByName('subject'))
 
-class TNCC(object):
+class TNCC:
     def __init__(self, vpn_host, device_id=None, funk=None, platform=None,
                  hostname=None, mac_addrs=[], certs=[],
                  user_agent=DEFAULT_USER_AGENT):
@@ -565,7 +565,7 @@ class TNCC(object):
         # We have a new DSPREAUTH cookie
         return self.find_cookie('DSPREAUTH')
 
-class TNCCServer(object):
+class TNCCServer:
     def __init__(self, s, t):
         self.sock = s
         self.tncc = t
