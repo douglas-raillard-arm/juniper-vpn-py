@@ -1,9 +1,8 @@
-#!/usr/bin/env python2.7
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import subprocess
 import mechanize
-import cookielib
+import http.cookiejar
 import getpass
 import sys
 import os
@@ -11,7 +10,7 @@ import ssl
 import argparse
 import atexit
 import signal
-import ConfigParser
+import configparser
 import time
 import binascii
 import hmac
@@ -43,7 +42,7 @@ Copyright 2010, Benjamin Dauvergne
 """
 
 def truncated_value(h):
-    bytes = map(ord, h)
+    bytes = list(map(ord, h))
     offset = bytes[-1] & 0xf
     v = (bytes[offset] & 0x7f) << 24 | (bytes[offset+1] & 0xff) << 16 | \
             (bytes[offset+2] & 0xff) << 8 | (bytes[offset+3] & 0xff)
@@ -55,7 +54,7 @@ def dec(h,p):
     return '%0*d' % (p, v)
 
 def int2beint64(i):
-    hex_counter = hex(long(i))[2:-1]
+    hex_counter = hex(int(i))[2:-1]
     hex_counter = '0' * (16 - len(hex_counter)) + hex_counter
     bin_counter = binascii.unhexlify(hex_counter)
     return bin_counter
@@ -94,16 +93,16 @@ class juniper_vpn(object):
                 for f in args.certs.split(','):
                     cert = tncc.x509cert(f.strip())
                     if now < cert.not_before:
-                        print 'WARNING: %s is not yet valid' % f
+                        print('WARNING: %s is not yet valid' % f)
                     if now > cert.not_after:
-                        print 'WARNING: %s is expired' % f
+                        print('WARNING: %s is expired' % f)
                     certs.append(cert)
                 args.certs = [n.strip() for n in args.certs.split(',')]
             args.certs = certs
 
         self.br = mechanize.Browser()
 
-        self.cj = cookielib.LWPCookieJar()
+        self.cj = http.cookiejar.LWPCookieJar()
         self.br.set_cookiejar(self.cj)
 
         # Browser options
@@ -201,7 +200,7 @@ class juniper_vpn(object):
             self.args.username = raw_input('Username: ')
         if self.args.password is None or self.last_action == 'login':
             if self.fixed_password:
-                print 'Login failed (Invalid username or password?)'
+                print('Login failed (Invalid username or password?)')
                 sys.exit(1)
             else:
                 self.args.password = getpass.getpass('Password: ')
@@ -224,7 +223,7 @@ class juniper_vpn(object):
                 secondary_password = "".join([  self.args.pass_prefix,
                                                 self.pass_postfix])
             else:
-                print 'Secondary password postfix not provided'
+                print('Secondary password postfix not provided')
                 sys.exit(1)
             self.br.form['password#2'] = secondary_password
         if self.args.realm:
@@ -236,7 +235,7 @@ class juniper_vpn(object):
         self.needs_2factor = True
         if self.args.oath:
             if self.last_action == 'key':
-                print 'Login failed (Invalid OATH key)'
+                print('Login failed (Invalid OATH key)')
                 sys.exit(1)
             self.key = hotp(self.args.oath)
         elif self.key is None:
@@ -267,7 +266,7 @@ class juniper_vpn(object):
         now = time.time()
         delay = 10.0 - (now - self.last_connect)
         if delay > 0:
-            print 'Waiting %.0f...' % (delay)
+            print('Waiting %.0f...' % (delay))
             time.sleep(delay)
         self.last_connect = time.time();
 
@@ -297,7 +296,7 @@ class juniper_vpn(object):
 
     def stop(self, signum, frame):
         if self.child:
-            print "Interrupt received, ending external program..."
+            print("Interrupt received, ending external program...")
             # Use SIGINT due to openconnect behavior where SIGINT will
             # run the vpnc-compatible script to clean up changes but
             # not upon SIGTERM.
@@ -354,7 +353,7 @@ if __name__ == "__main__":
         args.action = None
 
     if args.config is not None:
-        config = ConfigParser.RawConfigParser()
+        config = configparser.RawConfigParser()
         config.read(args.config)
         for arg in ['username', 'host', 'password', 'oath', 'action', 'stdin',
                     'hostname', 'platform', 'hwaddr', 'certs', 'device_id',
@@ -383,8 +382,8 @@ if __name__ == "__main__":
     elif not isinstance(args.action, list):
         args.action = shlex.split(args.action)
 
-    if args.host == None or args.action == []:
-        print "--host and <action> are required parameters"
+    if args.username == None or args.host == None or args.action == []:
+        print("--host and <action> are required parameters")
         sys.exit(1)
 
     jvpn = juniper_vpn(args)
