@@ -18,6 +18,7 @@ import shlex
 import platform
 import socket
 import datetime
+import contextlib
 
 import mechanize
 import netifaces
@@ -310,46 +311,45 @@ class juniper_vpn(object):
 
 def main():
     parser = argparse.ArgumentParser(conflict_handler='resolve')
-    parser.add_argument('-h', '--host', type=str,
+    parser.add_argument('-h', '--host',
                         help='VPN host name')
-    parser.add_argument('-r', '--realm', type=str,
+    parser.add_argument('-r', '--realm',
                         help='VPN realm')
-    parser.add_argument('-u', '--username', type=str,
+    parser.add_argument('-u', '--username',
                         help='User name')
-    parser.add_argument('-p', '--pass_prefix', type=str,
+    parser.add_argument('-p', '--pass_prefix',
                         help="Secondary password prefix")
-    parser.add_argument('-o', '--oath', type=str,
+    parser.add_argument('-o', '--oath',
                         help='OATH key for two factor authentication (hex)')
-    parser.add_argument('-c', '--config', type=str,
+    parser.add_argument('-c', '--config',
                         help='Config file')
-    parser.add_argument('-s', '--stdin', type=str,
+    parser.add_argument('-s', '--stdin',
                         help="String to pass to action's stdin")
-    parser.add_argument('-d', '--device-id', type=str,
+    parser.add_argument('-d', '--device-id',
                         help="Hex device ID")
     parser.add_argument('-f', '--enable-funk', action='store_true',
+                        default=None,
                         help="Request funk message")
-    parser.add_argument('-H', '--hostname', type=str,
+    parser.add_argument('-H', '--hostname',
                         help="Hostname to pass with funk request")
-    parser.add_argument('-p', '--platform', type=str,
+    parser.add_argument('-p', '--platform',
                         help="Platform type to pass with funk request")
-    parser.add_argument('-a', '--hwaddr', type=str,
+    parser.add_argument('-a', '--hwaddr',
                         help="Comma separated list of hwaddrs to pass with funk request")
-    parser.add_argument('-C', '--certs', type=str,
+    parser.add_argument('-C', '--certs',
                         help="Comma separated list of pem formatted certificates for funk response")
-    parser.add_argument('-U', '--user-agent', type=str,
+    parser.add_argument('-U', '--user-agent',
                         help="User agent string")
     parser.add_argument('action', nargs=argparse.REMAINDER,
+                        default=[],
                         metavar='<action> [<args...>]',
                         help='External command')
 
     args = parser.parse_args()
-    args.__dict__['password'] = None
+    args.password = None
 
-    if len(args.action) and args.action[0] == '--':
-        args.action = args.action[1:]
-
-    if not len(args.action):
-        args.action = None
+    with contextlib.suppress(ValueError):
+        args.action.remove('--')
 
     if args.config is not None:
         config = configparser.RawConfigParser()
@@ -363,7 +363,11 @@ def main():
                 except configparser.NoOptionError:
                     pass
 
-        if not args.enable_funk:
+        if not args.action:
+            with contextlib.suppress(configparser.NoOptionError):
+                args.action = shlex.split(config.get('vpn', 'action'))
+
+        if args.enable_funk is None:
             try:
                 val = config.get('vpn', 'enable_funk').lower()
             except configparser.NoOptionError:
@@ -373,15 +377,12 @@ def main():
                     args.enable_funk = True
                 elif val in ['false', '0', 'no', 'disable', 'off']:
                     args.enable_funk = False
+                else:
+                    raise ValueError('Unable to parse funk argument: {}'.format(val))
 
-    if args.action is None:
-        args.action = []
-    elif not isinstance(args.action, list):
-        args.action = shlex.split(args.action)
-
-    if args.username == None or args.host == None or args.action == []:
-        print("--user, --host, and <action> are required parameters")
-        sys.exit(1)
+    for arg_name in ('action', 'host', 'username'):
+        if not vars(args)[arg_name]:
+            parser.error('{} is required'.format(arg_name))
 
     jvpn = juniper_vpn(args)
     try:
