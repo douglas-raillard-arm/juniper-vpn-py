@@ -1,3 +1,15 @@
+Installation
+============
+
+In a Python virtual environment to avoid conflicts with packages from the
+distribution's package manager:
+
+$ python3 -m venv myvenv
+$ source myvenv/bin/activate
+$ pip install juniper-vpn-py
+
+Once that venv activated, the "juniper-vpn.py" binary will be in the path.
+
 Connecting to a Juniper VPN requires the generation of a DSID token.
 Generating this token involves authentication and host checking. The
 juniper-vpn.py script performs authentication, and the tncc.py script
