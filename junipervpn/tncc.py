@@ -551,7 +551,7 @@ class TNCC:
             if cert_id not in certs:
                 logging.warn('Could not find certificate for %s', str(req_dns))
 
-        inner = ''
+        inner = b''
         if certs:
             inner += self.gen_funk_response(certs)
         inner += self.gen_policy_response(policy_objs)
